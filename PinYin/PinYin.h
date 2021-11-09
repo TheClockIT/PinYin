@@ -1,4 +1,7 @@
 ﻿constexpr size_t PinYinSize = 0x16F00;
+
+// 来源： https://www.zdic.net
+// 补充： https://ctext.org/zhs
 static char8_t PinYin[PinYinSize][7][10] =
 {
 { u8"qiū", },
