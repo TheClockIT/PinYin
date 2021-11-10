@@ -12,6 +12,7 @@
 std::wstring UTF8ToUTF16(const std::string UTF8);
 std::u32string UTF8ToUTF32(const char8_t* pUTF8);
 constexpr char32_t UTF16ToUTF32(const char16_t* pUTF16);
+unsigned int UTF32ToUTF8(char32_t UTF32, char8_t* pUTF8);
 unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16);
 
 int main()
@@ -29,6 +30,30 @@ int main()
 		out.clear();
 		if (!in.empty())
 		{
+			size_t lxi = 0;
+			do
+			{
+				lxi = in.find(L"\\x", lxi);
+				if (lxi == -1)
+					break;
+
+				const size_t lxi2 = lxi + 2;
+
+				wchar_t* EndPtr = NULL;
+				const wchar_t* StartPtr = in.c_str() + lxi2;
+				long l = wcstol(StartPtr, &EndPtr, 16);
+				if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+				{
+					std::wstring UTF16;
+					unsigned int len = UTF32ToUTF16(l, UTF16);
+
+					const size_t count = EndPtr - StartPtr + 2;
+					in.replace(lxi, count, UTF16);
+				}
+				else
+					lxi += 2;
+			} while (true);
+
 			for (size_t i = 0; i < in.size(); i++)
 			{
 				if (i != 0)
@@ -186,6 +211,45 @@ constexpr char32_t UTF16ToUTF32(const char16_t* pUTF16)
 	else
 		return w1;
 }
+unsigned int UTF32ToUTF8(char32_t UTF32, char8_t* pUTF8)
+{
+	constexpr unsigned char Prefix[] = { 0, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
+	constexpr unsigned int  CodeUp[] = {
+			0x80,           // U+00000000 ～ U+0000007F  
+			0x800,          // U+00000080 ～ U+000007FF  
+			0x10000,        // U+00000800 ～ U+0000FFFF  
+			0x200000,       // U+00010000 ～ U+001FFFFF  
+			0x4000000,      // U+00200000 ～ U+03FFFFFF  
+			0x80000000      // U+04000000 ～ U+7FFFFFFF  
+	};
+
+	unsigned int i = 0;
+
+	// 根据UCS4编码范围确定对应的UTF-8编码字节数  
+	unsigned int iLen = (sizeof(CodeUp) / sizeof(*CodeUp));
+	for (i = 0; i < iLen; i++)
+	{
+		if (UTF32 < CodeUp[i])
+			break;
+	}
+
+	if (i == iLen)
+		return 0;    // 无效的UCS4编码  
+
+	iLen = i + 1;   // UTF-8编码字节数  
+	if (pUTF8 != NULL)
+	{
+		// 转换为UTF-8编码  
+		for (; i > 0; i--)
+		{
+			pUTF8[i] = static_cast<char8_t>((UTF32 & 0x3F) | 0x80);
+			UTF32 >>= 6;
+		}
+		pUTF8[0] = static_cast<char8_t>(UTF32 | Prefix[iLen - 1]);
+	}
+
+	return iLen;
+}
 unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16)
 {
 	if (UTF32 <= 0xFFFF)
@@ -193,7 +257,7 @@ unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16)
 		UTF16 += static_cast<wchar_t>(UTF32);
 		return 1;
 	}
-	else if (UTF32 <= 0xEFFFF)
+	else if (UTF32 <= 0x10FFFF)
 	{
 		UTF16 += static_cast<wchar_t>(0xD800 + (UTF32 >> 10) - 0x40); // 高10位
 		UTF16 += static_cast<wchar_t>(0xDC00 + (UTF32 & 0x03FF));     // 低10位
