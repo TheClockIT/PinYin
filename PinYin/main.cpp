@@ -25,30 +25,33 @@ int main()
 		out.clear();
 		if (!in.empty())
 		{
-			size_t lxi = 0;
-			do
+			// \x 转义功能，将\x后的字符串(\x0-\x10FFFF)转为char32_t字符
 			{
-				lxi = in.find(L"\\x", lxi);
-				if (lxi == -1)
-					break;
-
-				const size_t lxi2 = lxi + 2;
-
-				wchar_t* EndPtr = NULL;
-				const wchar_t* StartPtr = in.c_str() + lxi2;
-				long l = wcstol(StartPtr, &EndPtr, 16);
-				if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+				size_t lxi = 0;
+				do
 				{
-					std::wstring UTF16;
-					unsigned int len = UTF32ToUTF16(l, UTF16);
+					lxi = in.find(L"\\x", lxi);
+					if (lxi == -1)
+						break;
 
-					const size_t count = EndPtr - StartPtr + 2;
-					in.replace(lxi, count, UTF16);
-				}
-				else
-					lxi += 2;
-			} while (true);
+					const size_t lxi2 = lxi + 2;
 
+					wchar_t* EndPtr = NULL;
+					const wchar_t* StartPtr = in.c_str() + lxi2;
+					long l = wcstol(StartPtr, &EndPtr, 16);
+					if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+					{
+						std::wstring UTF16;
+						unsigned int len = UTF32ToUTF16(l, UTF16);
+
+						const size_t count = EndPtr - StartPtr + 2;
+						in.replace(lxi, count, UTF16);
+					}
+					else
+						lxi += 2;
+				} while (true);
+			}
+			
 			for (size_t i = 0; i < in.size(); i++)
 			{
 				if (i != 0)

@@ -4,7 +4,7 @@
 // 补充： https://ctext.org/zhs
 static char8_t PinYin[PinYinSize][7][10] =
 {
-{ u8"qiū", },	// \x3400 㐀
+{ u8"qiū", },
 { u8"tiàn", },
 { u8"xǐ", },
 { },
