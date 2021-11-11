@@ -8,12 +8,7 @@
 #include <string>
 
 #include "PinYin.h"
-
-std::wstring UTF8ToUTF16(const std::string UTF8);
-std::u32string UTF8ToUTF32(const char8_t* pUTF8);
-constexpr char32_t UTF16ToUTF32(const char16_t* pUTF16);
-unsigned int UTF32ToUTF8(char32_t UTF32, char8_t* pUTF8);
-unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16);
+#include "utils.h"
 
 int main()
 {
@@ -105,7 +100,7 @@ int main()
 					if (k != 0)
 						out += L"/";
 
-					out += UTF8ToUTF16((char*)PinYin[j][k]); // 将 PinYin[] 的类型改为wchar_t/char16_t可以节省这里的转换计算，但会牺牲更多内存
+					out += UTF8ToUTF16(PinYin[j][k]); // 将 PinYin[] 的类型改为wchar_t/char16_t可以节省这里的转换计算，但会牺牲更多内存
 				}
 				goto PinYinOutSource;
 			}
@@ -117,152 +112,4 @@ int main()
 
 		std::wcout << out << std::endl;
 	} while (true);
-}
-
-std::wstring UTF8ToUTF16(const std::string UTF8)
-{
-	std::wstring UTF16;
-
-	std::u32string UTF32 = UTF8ToUTF32((char8_t*)&UTF8[0]);
-	for (size_t i = 0; i < UTF32.size(); i++)
-	{
-		if (UTF32ToUTF16(UTF32[i], UTF16) == 0)
-			break;
-	}
-
-	return UTF16;
-}
-std::u32string UTF8ToUTF32(const char8_t* pUTF8)
-{
-	std::u32string UTF32;
-	if (pUTF8 == NULL)
-		return UTF32;
-	while (*pUTF8 != u8'\0')
-	{
-		char8_t b = *pUTF8++;
-		if (b < 0x80)
-		{
-			UTF32 += char32_t(b);
-			continue;
-		}
-		if (b < 0xC0 || b > 0xFD)
-			return UTF32;    // 非法UTF8
-
-		char32_t result = 0;
-		unsigned int iLen = 0;
-		if (b < 0xE0)
-		{
-			result = b & 0x1F;
-			iLen = 2;
-		}
-		else if (b < 0xF0)
-		{
-			result = b & 0x0F;
-			iLen = 3;
-		}
-		else if (b < 0xF8)
-		{
-			result = b & 7;
-			iLen = 4;
-		}
-		else if (b < 0xFC)
-		{
-			result = b & 3;
-			iLen = 5;
-		}
-		else
-		{
-			result = b & 1;
-			iLen = 6;
-		}
-
-		for (unsigned int i = 1; i < iLen; i++)
-		{
-			b = *pUTF8++;
-			if (b < 0x80 || b > 0xBF)
-				return UTF32; // 非法UTF8
-
-			result = (result << 6) + (b & 0x3F);
-		}
-
-		UTF32 += result;
-	}
-
-	return UTF32;
-}
-constexpr char32_t UTF16ToUTF32(const char16_t* pUTF16)
-{
-	if (pUTF16 == NULL)
-		return 0;
-
-	const char16_t& w1 = pUTF16[0];
-	if (w1 >= 0xD800 && w1 <= 0xDFFF)
-	{
-		// 编码在替代区域（Surrogate Area）  
-		if (w1 < 0xDC00)
-		{
-			const char16_t& w2 = pUTF16[1];
-			if (w2 >= 0xDC00 && w2 <= 0xDFFF)
-				return (w2 & 0x03FF) + (((w1 & 0x03FF) + 0x40) << 10);
-		}
-
-		return 0;   // 非法UTF16编码      
-	}
-	else
-		return w1;
-}
-unsigned int UTF32ToUTF8(char32_t UTF32, char8_t* pUTF8)
-{
-	constexpr unsigned char Prefix[] = { 0, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
-	constexpr unsigned int  CodeUp[] = {
-			0x80,           // U+00000000 ～ U+0000007F  
-			0x800,          // U+00000080 ～ U+000007FF  
-			0x10000,        // U+00000800 ～ U+0000FFFF  
-			0x200000,       // U+00010000 ～ U+001FFFFF  
-			0x4000000,      // U+00200000 ～ U+03FFFFFF  
-			0x80000000      // U+04000000 ～ U+7FFFFFFF  
-	};
-
-	unsigned int i = 0;
-
-	// 根据UCS4编码范围确定对应的UTF-8编码字节数  
-	unsigned int iLen = (sizeof(CodeUp) / sizeof(*CodeUp));
-	for (i = 0; i < iLen; i++)
-	{
-		if (UTF32 < CodeUp[i])
-			break;
-	}
-
-	if (i == iLen)
-		return 0;    // 无效的UCS4编码  
-
-	iLen = i + 1;   // UTF-8编码字节数  
-	if (pUTF8 != NULL)
-	{
-		// 转换为UTF-8编码  
-		for (; i > 0; i--)
-		{
-			pUTF8[i] = static_cast<char8_t>((UTF32 & 0x3F) | 0x80);
-			UTF32 >>= 6;
-		}
-		pUTF8[0] = static_cast<char8_t>(UTF32 | Prefix[iLen - 1]);
-	}
-
-	return iLen;
-}
-unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16)
-{
-	if (UTF32 <= 0xFFFF)
-	{
-		UTF16 += static_cast<wchar_t>(UTF32);
-		return 1;
-	}
-	else if (UTF32 <= 0x10FFFF)
-	{
-		UTF16 += static_cast<wchar_t>(0xD800 + (UTF32 >> 10) - 0x40); // 高10位
-		UTF16 += static_cast<wchar_t>(0xDC00 + (UTF32 & 0x03FF));     // 低10位
-		return 2;
-	}
-	else
-		return 0;
 }
