@@ -1,6 +1,4 @@
-﻿#pragma once
-
-unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16)
+﻿unsigned int UTF32ToUTF16(char32_t UTF32, std::wstring& UTF16)
 {
 	if (UTF32 <= 0xFFFF)
 	{
