@@ -30,25 +30,73 @@ int main()
 				size_t lxi = 0;
 				do
 				{
-					lxi = in.find(L"\\x", lxi);
-					if (lxi == -1)
-						break;
-
-					const size_t lxi2 = lxi + 2;
-
-					wchar_t* EndPtr = NULL;
-					const wchar_t* StartPtr = in.c_str() + lxi2;
-					long l = wcstol(StartPtr, &EndPtr, 16);
-					if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+					size_t tlxi = in.find(L"\\x", lxi);
+					if (tlxi != -1)
 					{
-						std::wstring UTF16;
-						unsigned int len = UTF32ToUTF16(l, UTF16);
+						lxi = tlxi;
+						const size_t lxi2 = lxi + 2;
 
-						const size_t count = EndPtr - StartPtr + 2;
-						in.replace(lxi, count, UTF16);
+						wchar_t* EndPtr = NULL;
+						const wchar_t* StartPtr = in.c_str() + lxi2;
+						long l = wcstol(StartPtr, &EndPtr, 16);
+						if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+						{
+							std::wstring UTF16;
+							unsigned int len = UTF32ToUTF16(l, UTF16);
+
+							const size_t count = EndPtr - StartPtr + 2;
+							in.replace(lxi, count, UTF16);
+						}
+						else
+							lxi += 2;
+
+						continue;
 					}
-					else
-						lxi += 2;
+
+#ifdef _DEBUG
+					// 用于检查 PinYin.h 行数对应的拼音是那个文字
+					tlxi = in.find(L"\\g", lxi);
+					if (tlxi != -1)
+					{
+						lxi = tlxi;
+						const size_t lxi2 = lxi + 2;
+
+						wchar_t* EndPtr = NULL;
+						const wchar_t* StartPtr = in.c_str() + lxi2;
+						long l = wcstol(StartPtr, &EndPtr, 10);
+						if (l < PinYinSize)	// 0x09是TAB缩进
+						{
+							if (l >= 0x00000 && l <= 0x019BF)
+								l += 0x3400;
+							else if (l >= 0x019C0 && l <= 0x06BBF)
+								l += 0x3440;
+							else if (l >= 0x06BC0 && l <= 0x06DBF)
+								l -= 0x8D40;
+							else if (l >= 0x06DC0 && l <= 0x1149F)
+								l -= 0x19240;
+							else if (l >= 0x114A0 && l <= 0x1598F)
+								l -= 0x19260;
+							else if (l >= 0x15990 && l <= 0x15BAF)
+								l -= 0x19E70;
+							else if (l >= 0x15BB0 && l <= 0x16EFF)
+								l -= 0x1A450;
+
+							l -= 7;
+
+							std::wstring UTF16;
+							unsigned int len = UTF32ToUTF16(l, UTF16);
+
+							const size_t count = EndPtr - StartPtr + 2;
+							in.replace(lxi, count, UTF16);
+						}
+						else
+							lxi += 2;
+
+						continue;
+					}
+#endif // !_DEBUG
+
+					break;
 				} while (true);
 			}
 			

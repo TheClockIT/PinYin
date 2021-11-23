@@ -191,6 +191,7 @@ std::string HttpRequest(const wchar_t* pHostName, const short sPort, const wchar
 	return strResponse;
 }
 
+// 爬虫
 void Reptile()
 {
 	static const unsigned int ranges[] =
