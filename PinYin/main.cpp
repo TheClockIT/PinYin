@@ -25,73 +25,104 @@ int main()
 		out.clear();
 		if (!in.empty())
 		{
-			// \x 转义功能，将\x后的字符串(\x0-\x10FFFF)转为char32_t字符
-			// \g 转义功能，将\g后的字符串(\g0-\g(PinYinSize))转为char32_t字符，用于检查PinYin.h对应行数显示的文字
+			// 转义功能
+			// \x 将\x后的16进制字符串(\x0-\x10FFFF)转为char32_t字符
+			// \d 将\x后的10进制字符串(\d0-\d1114111)转为char32_t字符
+			// \o 将\x后的8进制字符串(\o0-\o4177777)转为char32_t字符
+			// \b 将\x后的2进制字符串(\b0-\b100001111111111111111)转为char32_t字符
+			// \g 将\g后的10进制字符串(\g0-\g(PinYinSize))转为char32_t字符，用于检查PinYin.h对应行数显示的文字
 			{
 				size_t lxi = 0;
 				do
 				{
+					enum class EscapeEnum : char
+					{
+						none = 0,
+						x,
+						d,
+						o,
+						b,
+						g,
+					};
+					EscapeEnum flag = EscapeEnum::none;
+
 					size_t tlxi = in.find(L"\\x", lxi);
 					if (tlxi != -1)
+						flag = EscapeEnum::x;
+					else if ((tlxi = in.find(L"\\d", lxi)) != -1)
+						flag = EscapeEnum::d;
+					else if ((tlxi = in.find(L"\\o", lxi)) != -1)
+						flag = EscapeEnum::o;
+					else if ((tlxi = in.find(L"\\b", lxi)) != -1)
+						flag = EscapeEnum::b;
+					else if ((tlxi = in.find(L"\\g", lxi)) != -1)
+						flag = EscapeEnum::g;
+
+					if (flag != EscapeEnum::none)
 					{
 						lxi = tlxi;
 						const size_t lxi2 = lxi + 2;
-
 						wchar_t* EndPtr = NULL;
 						const wchar_t* StartPtr = in.c_str() + lxi2;
-						const long l = wcstol(StartPtr, &EndPtr, 16);
-						if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+
+						switch (flag)
 						{
-							std::wstring UTF16;
-							UTF32ToUTF16(l, UTF16);
-
-							const size_t count = EndPtr - StartPtr + 2;
-							in.replace(lxi, count, UTF16);
-						}
-						else
-							lxi += 2;
-
-						continue;
-					}
-
-					// 用于检查 PinYin.h 对应行数的拼音是那个文字
-					tlxi = in.find(L"\\g", lxi);
-					if (tlxi != -1)
-					{
-						lxi = tlxi;
-						const size_t lxi2 = lxi + 2;
-
-						wchar_t* EndPtr = NULL;
-						const wchar_t* StartPtr = in.c_str() + lxi2;
-						long l = wcstol(StartPtr, &EndPtr, 10);
-						if (l < PinYinSize)
+						case EscapeEnum::x:
+						case EscapeEnum::d:
+						case EscapeEnum::o:
+						case EscapeEnum::b:
 						{
-							l -= 7;
+							const long l = wcstol(StartPtr, &EndPtr, ((flag == EscapeEnum::x) ? 16 : (flag == EscapeEnum::d) ? 10 : (flag == EscapeEnum::o) ? 8 : 2));
+							if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
+							{
+								std::wstring UTF16;
+								UTF32ToUTF16(l, UTF16);
 
-							if (l >= 0x00000 && l <= 0x019BF)		// 0x3400 - 0x4DBF
-								l += 0x3400;
-							else if (l >= 0x019C0 && l <= 0x06BBF)	// 0x4E00 - 0x9FFF
-								l += 0x3440;
-							else if (l >= 0x06BC0 && l <= 0x06DBF)	// 0xF900 - 0xFAFF
-								l -= 0x8D40;
-							else if (l >= 0x06DC0 && l <= 0x1149F)	// 0x20000 - 0x2A6DF
-								l -= 0x19240;
-							else if (l >= 0x114A0 && l <= 0x1598F)	// 0x2A700 - 0x2EBEF
-								l -= 0x19260;
-							else if (l >= 0x15990 && l <= 0x15BAF)	// 0x2F800 - 0x2FA1F
-								l -= 0x19E70;
-							else if (l >= 0x15BB0 && l <= 0x16EFF)	// 0x30000 - 0x3134F
-								l -= 0x1A450;
-
-							std::wstring UTF16;
-							UTF32ToUTF16(l, UTF16);
-
-							const size_t count = EndPtr - StartPtr + 2;
-							in.replace(lxi, count, UTF16);
+								const size_t count = EndPtr - StartPtr + 2;
+								in.replace(lxi, count, UTF16);
+							}
+							else
+								lxi += 2;
+							break;
 						}
-						else
-							lxi += 2;
 
+						case EscapeEnum::g:
+						{
+							long l = wcstol(StartPtr, &EndPtr, 10);
+							if (l < PinYinSize)
+							{
+								l -= 7;	// PinYin.h的偏移行数
+
+								if (l >= 0x00000 && l <= 0x019BF)		// 0x3400 - 0x4DBF
+									l += 0x3400;
+								else if (l >= 0x019C0 && l <= 0x06BBF)	// 0x4E00 - 0x9FFF
+									l += 0x3440;
+								else if (l >= 0x06BC0 && l <= 0x06DBF)	// 0xF900 - 0xFAFF
+									l -= 0x8D40;
+								else if (l >= 0x06DC0 && l <= 0x1149F)	// 0x20000 - 0x2A6DF
+									l -= 0x19240;
+								else if (l >= 0x114A0 && l <= 0x1598F)	// 0x2A700 - 0x2EBEF
+									l -= 0x19260;
+								else if (l >= 0x15990 && l <= 0x15BAF)	// 0x2F800 - 0x2FA1F
+									l -= 0x19E70;
+								else if (l >= 0x15BB0 && l <= 0x16EFF)	// 0x30000 - 0x3134F
+									l -= 0x1A450;
+
+								std::wstring UTF16;
+								UTF32ToUTF16(l, UTF16);
+
+								const size_t count = EndPtr - StartPtr + 2;
+								in.replace(lxi, count, UTF16);
+							}
+							else
+								lxi += 2;
+							break;
+						}
+							
+						default:
+							break;
+						}
+						
 						continue;
 					}
 
