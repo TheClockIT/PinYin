@@ -26,6 +26,7 @@ int main()
 		if (!in.empty())
 		{
 			// \x 转义功能，将\x后的字符串(\x0-\x10FFFF)转为char32_t字符
+			// \g 转义功能，将\g后的字符串(\g0-\g(PinYinSize))转为char32_t字符，用于检查PinYin.h对应行数显示的文字
 			{
 				size_t lxi = 0;
 				do
@@ -53,8 +54,7 @@ int main()
 						continue;
 					}
 
-#ifdef _DEBUG
-					// 用于检查 PinYin.h 行数对应的拼音是那个文字
+					// 用于检查 PinYin.h 对应行数的拼音是那个文字
 					tlxi = in.find(L"\\g", lxi);
 					if (tlxi != -1)
 					{
@@ -94,7 +94,6 @@ int main()
 
 						continue;
 					}
-#endif // !_DEBUG
 
 					break;
 				} while (true);
