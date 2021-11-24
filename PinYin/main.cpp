@@ -39,11 +39,11 @@ int main()
 
 						wchar_t* EndPtr = NULL;
 						const wchar_t* StartPtr = in.c_str() + lxi2;
-						long l = wcstol(StartPtr, &EndPtr, 16);
+						const long l = wcstol(StartPtr, &EndPtr, 16);
 						if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09是TAB缩进字形, wchar_t/char16_t只支持到0x10FFFF，UTF32大于0x10FFFF的字形无法显示。
 						{
 							std::wstring UTF16;
-							unsigned int len = UTF32ToUTF16(l, UTF16);
+							UTF32ToUTF16(l, UTF16);
 
 							const size_t count = EndPtr - StartPtr + 2;
 							in.replace(lxi, count, UTF16);
@@ -64,27 +64,27 @@ int main()
 						wchar_t* EndPtr = NULL;
 						const wchar_t* StartPtr = in.c_str() + lxi2;
 						long l = wcstol(StartPtr, &EndPtr, 10);
-						if (l < PinYinSize)	// 0x09是TAB缩进
+						if (l < PinYinSize)
 						{
-							if (l >= 0x00000 && l <= 0x019BF)
-								l += 0x3400;
-							else if (l >= 0x019C0 && l <= 0x06BBF)
-								l += 0x3440;
-							else if (l >= 0x06BC0 && l <= 0x06DBF)
-								l -= 0x8D40;
-							else if (l >= 0x06DC0 && l <= 0x1149F)
-								l -= 0x19240;
-							else if (l >= 0x114A0 && l <= 0x1598F)
-								l -= 0x19260;
-							else if (l >= 0x15990 && l <= 0x15BAF)
-								l -= 0x19E70;
-							else if (l >= 0x15BB0 && l <= 0x16EFF)
-								l -= 0x1A450;
-
 							l -= 7;
 
+							if (l >= 0x00000 && l <= 0x019BF)		// 0x3400 - 0x4DBF
+								l += 0x3400;
+							else if (l >= 0x019C0 && l <= 0x06BBF)	// 0x4E00 - 0x9FFF
+								l += 0x3440;
+							else if (l >= 0x06BC0 && l <= 0x06DBF)	// 0xF900 - 0xFAFF
+								l -= 0x8D40;
+							else if (l >= 0x06DC0 && l <= 0x1149F)	// 0x20000 - 0x2A6DF
+								l -= 0x19240;
+							else if (l >= 0x114A0 && l <= 0x1598F)	// 0x2A700 - 0x2EBEF
+								l -= 0x19260;
+							else if (l >= 0x15990 && l <= 0x15BAF)	// 0x2F800 - 0x2FA1F
+								l -= 0x19E70;
+							else if (l >= 0x15BB0 && l <= 0x16EFF)	// 0x30000 - 0x3134F
+								l -= 0x1A450;
+
 							std::wstring UTF16;
-							unsigned int len = UTF32ToUTF16(l, UTF16);
+							UTF32ToUTF16(l, UTF16);
 
 							const size_t count = EndPtr - StartPtr + 2;
 							in.replace(lxi, count, UTF16);
