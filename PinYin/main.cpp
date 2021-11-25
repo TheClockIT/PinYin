@@ -15,6 +15,8 @@ int main()
 	_setmode(_fileno(stdin), _O_WTEXT);
 	_setmode(_fileno(stdout), _O_WTEXT);
 
+	GetUnihanReadings();
+
 	std::wstring in;
 	std::wstring out;
 	do
@@ -30,7 +32,7 @@ int main()
 			// \d 将\x后的10进制字符串(\d32-\d1114111)转为字符
 			// \o 将\x后的8进制字符串(\o40-\o4177777)转为字符
 			// \b 将\x后的2进制字符串(\b100000-\b100001111111111111111)转为字符
-			// \g 将\g后的10进制字符串(\g0-\g(PinYinSize))转为char32_t字符，用于检查PinYin.h对应行数显示的文字
+			// \g 将\g后的10进制字符串(\g0-\g(PinYinSize))转为字符，用于检查PinYin.h对应行数显示的文字
 			{
 				size_t lxi = 0;
 				do
@@ -91,7 +93,7 @@ int main()
 							long l = wcstol(StartPtr, &EndPtr, 10);
 							if (l < PinYinSize)
 							{
-								l -= 7;	// PinYin.h的偏移行数
+								l -= 8;	// PinYin.h的偏移行数
 
 								if (l >= 0x00000 && l <= 0x019BF)		// 0x3400 - 0x4DBF
 									l += 0x3400;
@@ -190,6 +192,8 @@ int main()
 		{
 			break;
 		}
+
+		SetClipboardText(out.c_str()); // 设置当前文字到剪切板
 
 		std::wcout << out << std::endl;
 	} while (true);

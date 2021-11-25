@@ -351,3 +351,162 @@ void DeleteDuplicate(char8_t _PinYin[][7][8], size_t _Size)
 
 	fclose(pFile);
 }
+
+// 设置剪切板
+void SetClipboardText(const wchar_t* text)
+{
+	if (!OpenClipboard(NULL))
+		return;
+
+	const SIZE_T len = (wcslen(text) + 1) * sizeof(WCHAR);
+	HGLOBAL hBuf = GlobalAlloc(GMEM_MOVEABLE, len);
+	if (hBuf != NULL)
+	{
+		WCHAR* wBuf = (WCHAR*)::GlobalLock(hBuf);
+		memcpy_s(wBuf, len, text, len);
+		GlobalUnlock(wBuf);
+
+		EmptyClipboard();
+		if (SetClipboardData(CF_UNICODETEXT, wBuf) == NULL)
+			GlobalFree(wBuf);
+	}
+
+	CloseClipboard();
+}
+
+// 对 Unihan_Readings.txt 的数据处理
+void GetUnihanReadings()
+{
+	FILE* pFile = _wfsopen(L"Unihan_Readings.txt", L"r, ccs=UNICODE", _SH_DENYWR);
+	if (pFile == NULL)
+		return;
+
+	wchar_t Buffer[255] = { 0 };
+
+	std::vector<std::wstring> UnihanReadings;
+
+	while (!feof(pFile))
+	{
+		fgetws(Buffer, 255, pFile);
+		if (Buffer[0] != L'U')
+			continue;
+		UnihanReadings.push_back(Buffer);
+	};
+
+	fclose(pFile);
+
+	if (!UnihanReadings.empty())
+	{
+		static const unsigned int ranges[] =
+		{
+			0x3400, 0x4DBF,   // CJK Unified Ideographs Extension A
+			0x4E00, 0x9FFF,   // CJK Unified Ideographs
+			0xF900, 0xFAFF,   // CJK Compatibility Ideographs
+			0x20000, 0x2A6DF, // CJK Unified Ideographs Extension B
+			0x2A700, 0x2EBEF, // CJK Unified Ideographs Extension C-F
+			0x2F800, 0x2FA1F, // CJK Compatibility Ideographs Supplement
+			0x30000, 0x3134F, // CJK Unified Ideographs Extension G
+		};
+		constexpr size_t rangesSize = sizeof(ranges) / sizeof(*ranges);
+
+		FILE* pFile = _wfsopen(L"Reptile.txt", L"w, ccs=UNICODE", _SH_DENYWR);
+		if (pFile == NULL)
+			return;
+
+		size_t URi = 0;
+		size_t fi = 0;
+
+		for (size_t i = 0; i < rangesSize; i += 2)
+		{
+			for (size_t j = ranges[i]; j <= ranges[i + 1]; j++)
+			{
+				size_t pyIndex = j;
+				if (j >= 0x3400 && j <= 0x4DBF)			// 0x00000 - 0x019BF
+					pyIndex -= 0x3400;
+				else if (j >= 0x4E00 && j <= 0x9FFF)	// 0x019C0 - 0x06BBF
+					pyIndex -= 0x3440;
+				else if (j >= 0xF900 && j <= 0xFAFF)	// 0x06BC0 - 0x06DBF
+					pyIndex -= 0x8D40;
+				else if (j >= 0x20000 && j <= 0x2A6DF)	// 0x06DC0 - 0x1149F
+					pyIndex -= 0x19240;
+				else if (j >= 0x2A700 && j <= 0x2EBEF)	// 0x114A0 - 0x1598F
+					pyIndex -= 0x19260;
+				else if (j >= 0x2F800 && j <= 0x2FA1F)	// 0x15990 - 0x15BAF
+					pyIndex -= 0x19E70;
+				else if (j >= 0x30000 && j <= 0x3134F)	// 0x15BB0 - 0x16EFF
+					pyIndex -= 0x1A450;
+				else
+					break;
+
+				if (pyIndex >= PinYinSize)
+					break;
+
+				if (PinYin[pyIndex][0][0] != 0)
+				{
+					fwprintf_s(pFile, L"{ ");
+					for (size_t k = 0; k < 7; k++)
+					{
+						if (PinYin[pyIndex][k][0] == 0)
+							break;
+						std::wstring UTF16 = UTF8ToUTF16(PinYin[pyIndex][k]);
+						fwprintf_s(pFile, L"u8\"%s\", ", UTF16.c_str());
+					}
+					fwprintf_s(pFile, L"},\n");
+					fflush(pFile);
+				}
+				else
+				{
+					bool isContinue = false;
+					wchar_t* EndPtr = 0;
+					for (; URi < UnihanReadings.size(); URi++)
+					{
+						const std::wstring& item = UnihanReadings[URi];
+						fi = wcstol(item.c_str() + 2, &EndPtr, 16);
+						if (fi == j)
+						{
+							fi = item.find(L"kHanyuPinyin", 7);
+							if (fi != -1)
+							{
+								fi = item.find(L":", fi + 12);
+								if (fi != -1)
+								{
+									isContinue = true;
+									break;
+								}
+							}
+
+							fi = item.find(L"kMandarin", 7);
+							if(fi != -1)
+							{
+								fi = item.find(L"\t", fi + 9);
+								if (fi != -1)
+								{
+									isContinue = true;
+									break;
+								}
+							}
+						}
+						else if(fi > j)
+						{
+							break;
+						}
+					}
+					if (isContinue)
+					{
+						fwprintf_s(pFile, L"{ ");
+						fwprintf_s(pFile, L"u8\"%s\"", UnihanReadings[URi].substr(fi + 1, UnihanReadings[URi].size() - fi - 2).c_str());
+						fwprintf_s(pFile, L"},\n");
+						fflush(pFile);
+						URi++;
+						continue;
+					}
+
+					fwprintf_s(pFile, L"{ },\n");
+					fflush(pFile);
+				}
+			}
+		}
+
+		fclose(pFile);
+	}
+}
