@@ -494,7 +494,7 @@ void GetUnihanReadings()
 					if (isContinue)
 					{
 						fwprintf_s(pFile, L"{ ");
-						fwprintf_s(pFile, L"u8\"%s\"", UnihanReadings[URi].substr(fi + 1, UnihanReadings[URi].size() - fi - 2).c_str());
+						fwprintf_s(pFile, L"u8\"%s\", ", UnihanReadings[URi].substr(fi + 1, UnihanReadings[URi].size() - fi - 2).c_str());
 						fwprintf_s(pFile, L"},\n");
 						fflush(pFile);
 						URi++;

@@ -15,8 +15,6 @@ int main()
 	_setmode(_fileno(stdin), _O_WTEXT);
 	_setmode(_fileno(stdout), _O_WTEXT);
 
-	GetUnihanReadings();
-
 	std::wstring in;
 	std::wstring out;
 	do
@@ -100,15 +98,15 @@ int main()
 								else if (l >= 0x019C0 && l <= 0x06BBF)	// 0x4E00 - 0x9FFF
 									l += 0x3440;
 								else if (l >= 0x06BC0 && l <= 0x06DBF)	// 0xF900 - 0xFAFF
-									l -= 0x8D40;
+									l += 0x8D40;
 								else if (l >= 0x06DC0 && l <= 0x1149F)	// 0x20000 - 0x2A6DF
-									l -= 0x19240;
+									l += 0x19240;
 								else if (l >= 0x114A0 && l <= 0x1598F)	// 0x2A700 - 0x2EBEF
-									l -= 0x19260;
+									l += 0x19260;
 								else if (l >= 0x15990 && l <= 0x15BAF)	// 0x2F800 - 0x2FA1F
-									l -= 0x19E70;
+									l += 0x19E70;
 								else if (l >= 0x15BB0 && l <= 0x16EFF)	// 0x30000 - 0x3134F
-									l -= 0x1A450;
+									l += 0x1A450;
 
 								std::wstring UTF16;
 								UTF32ToUTF16(l, UTF16);
