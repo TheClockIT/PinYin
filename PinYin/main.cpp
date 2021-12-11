@@ -1,4 +1,4 @@
-﻿#include <io.h>
+#include <io.h>
 #include <fcntl.h>
 #include <Windows.h>
 //#include <stringapiset.h>
@@ -7,8 +7,8 @@
 #include <vector>
 #include <string>
 
-#include "PinYin.h"
-#include "utils.h"
+#include "PinYin.hpp"
+#include "utils.hpp"
 
 int main()
 {
