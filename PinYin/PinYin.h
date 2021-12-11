@@ -3,7 +3,7 @@ constexpr size_t PinYinSize = 0x16F00;
 // 来源： https://www.zdic.net
 // 补充： https://ctext.org/zhs
 // 补充： http://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip
-static constexpr char PinYin[PinYinSize][7][10] =
+static constexpr char8_t PinYin[PinYinSize][7][10] =
 {
 { u8"qiū", },
 { u8"tiàn", },
