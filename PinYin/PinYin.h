@@ -1,4 +1,4 @@
-constexpr size_t PinYinSize = 0x16F00;
+﻿constexpr size_t PinYinSize = 0x16F00;
 
 // 来源： https://www.zdic.net
 // 补充： https://ctext.org/zhs

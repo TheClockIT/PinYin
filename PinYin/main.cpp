@@ -1,4 +1,4 @@
-#include <io.h>
+ï»¿#include <io.h>
 #include <fcntl.h>
 #include <Windows.h>
 //#include <stringapiset.h>
@@ -19,18 +19,18 @@ int main()
 	std::wstring out;
 	do
 	{
-		std::wcout << L"ÊäÈëºº×Ö£º";
+		std::wcout << L"è¾“å…¥æ±‰å­—ï¼š";
 		std::wcin >> in;
 
 		out.clear();
 		if (!in.empty())
 		{
-			// ×ªÒå¹¦ÄÜ
-			// \x ½«\xºóµÄ16½øÖÆ×Ö·û´®(\x20-\x10FFFF)×ªÎª×Ö·û
-			// \d ½«\xºóµÄ10½øÖÆ×Ö·û´®(\d32-\d1114111)×ªÎª×Ö·û
-			// \o ½«\xºóµÄ8½øÖÆ×Ö·û´®(\o40-\o4177777)×ªÎª×Ö·û
-			// \b ½«\xºóµÄ2½øÖÆ×Ö·û´®(\b100000-\b100001111111111111111)×ªÎª×Ö·û
-			// \g ½«\gºóµÄ10½øÖÆ×Ö·û´®(\g0-\g(PinYinSize))×ªÎª×Ö·û£¬ÓÃÓÚ¼ì²éPinYin.h¶ÔÓ¦ÐÐÊýÏÔÊ¾µÄÎÄ×Ö
+			// è½¬ä¹‰åŠŸèƒ½
+			// \x å°†\xåŽçš„16è¿›åˆ¶å­—ç¬¦ä¸²(\x20-\x10FFFF)è½¬ä¸ºå­—ç¬¦
+			// \d å°†\xåŽçš„10è¿›åˆ¶å­—ç¬¦ä¸²(\d32-\d1114111)è½¬ä¸ºå­—ç¬¦
+			// \o å°†\xåŽçš„8è¿›åˆ¶å­—ç¬¦ä¸²(\o40-\o4177777)è½¬ä¸ºå­—ç¬¦
+			// \b å°†\xåŽçš„2è¿›åˆ¶å­—ç¬¦ä¸²(\b100000-\b100001111111111111111)è½¬ä¸ºå­—ç¬¦
+			// \g å°†\gåŽçš„10è¿›åˆ¶å­—ç¬¦ä¸²(\g0-\g(PinYinSize))è½¬ä¸ºå­—ç¬¦ï¼Œç”¨äºŽæ£€æŸ¥PinYin.hå¯¹åº”è¡Œæ•°æ˜¾ç¤ºçš„æ–‡å­—
 			{
 				size_t lxi = 0;
 				do
@@ -73,7 +73,7 @@ int main()
 						case EscapeEnum::b:
 						{
 							const long l = wcstol(StartPtr, &EndPtr, ((flag == EscapeEnum::x) ? 16 : (flag == EscapeEnum::d) ? 10 : (flag == EscapeEnum::o) ? 8 : 2));
-							if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09ÊÇTABËõ½ø×ÖÐÎ, wchar_t/char16_tÖ»Ö§³Öµ½0x10FFFF£¬UTF32´óÓÚ0x10FFFFµÄ×ÖÐÎÎÞ·¨ÏÔÊ¾¡£
+							if ((l >= 0x20 || l == 0x09) && l <= 0x10FFFF)	// 0x09æ˜¯TABç¼©è¿›å­—å½¢, wchar_t/char16_tåªæ”¯æŒåˆ°0x10FFFFï¼ŒUTF32å¤§äºŽ0x10FFFFçš„å­—å½¢æ— æ³•æ˜¾ç¤ºã€‚
 							{
 								std::wstring UTF16;
 								UTF32ToUTF16(l, UTF16);
@@ -91,7 +91,7 @@ int main()
 							long l = wcstol(StartPtr, &EndPtr, 10);
 							if (l < PinYinSize)
 							{
-								l -= 8;	// PinYin.hµÄÆ«ÒÆÐÐÊý
+								l -= 8;	// PinYin.hçš„åç§»è¡Œæ•°
 
 								if (l >= 0x00000 && l <= 0x019BF)		// 0x3400 - 0x4DBF
 									l += 0x3400;
@@ -139,19 +139,19 @@ int main()
 				if (j > 0xFFFF)
 					i++;
 
-				// 0x2E80  - 0x2EFF  CJK Radicals Supplement ºº×Ö²¿Ê× 128¸ö
-				// 0x2F00  - 0x2FDF  Kangxi Radicals         ¿µÎõ²¿Ê× 224¸ö
+				// 0x2E80  - 0x2EFF  CJK Radicals Supplement æ±‰å­—éƒ¨é¦– 128ä¸ª
+				// 0x2F00  - 0x2FDF  Kangxi Radicals         åº·ç†™éƒ¨é¦– 224ä¸ª
 				// 
-				// 0x3400  - 0x4DBF  CJK Unified Ideographs Extension A			6592¸öºº×Ö
-				// 0x4E00  - 0x9FFF  CJK Unified Ideographs						20992¸öºº×Ö
-				// 0xF900  - 0xFAFF  CJK Compatibility Ideographs				512¸öºº×Ö
-				// 0x20000 - 0x2A6DF CJK Unified Ideographs Extension B			42720¸öºº×Ö
-				// 0x2A700 - 0x2B73F CJK Unified Ideographs Extension C			4160¸öºº×Ö
-				// 0x2B740 - 0x2B81F CJK Unified Ideographs Extension D			224¸öºº×Ö
-				// 0x2B820 - 0x2CEAF CJK Unified Ideographs Extension E			5776¸öºº×Ö
-				// 0x2CEB0 - 0x2EBEF CJK Unified Ideographs Extension F			7488¸öºº×Ö
-				// 0x2F800 - 0x2FA1F CJK Compatibility Ideographs Supplement	544¸öºº×Ö
-				// 0x30000 - 0x3134F CJK Unified Ideographs Extension G			4944¸öºº×Ö
+				// 0x3400  - 0x4DBF  CJK Unified Ideographs Extension A			6592ä¸ªæ±‰å­—
+				// 0x4E00  - 0x9FFF  CJK Unified Ideographs						20992ä¸ªæ±‰å­—
+				// 0xF900  - 0xFAFF  CJK Compatibility Ideographs				512ä¸ªæ±‰å­—
+				// 0x20000 - 0x2A6DF CJK Unified Ideographs Extension B			42720ä¸ªæ±‰å­—
+				// 0x2A700 - 0x2B73F CJK Unified Ideographs Extension C			4160ä¸ªæ±‰å­—
+				// 0x2B740 - 0x2B81F CJK Unified Ideographs Extension D			224ä¸ªæ±‰å­—
+				// 0x2B820 - 0x2CEAF CJK Unified Ideographs Extension E			5776ä¸ªæ±‰å­—
+				// 0x2CEB0 - 0x2EBEF CJK Unified Ideographs Extension F			7488ä¸ªæ±‰å­—
+				// 0x2F800 - 0x2FA1F CJK Compatibility Ideographs Supplement	544ä¸ªæ±‰å­—
+				// 0x30000 - 0x3134F CJK Unified Ideographs Extension G			4944ä¸ªæ±‰å­—
 
 				if (j >= 0x3400 && j <= 0x4DBF)			// 0x0000  - 0x19BF
 					j -= 0x3400;								   
@@ -181,7 +181,7 @@ int main()
 					if (k != 0)
 						out += L"/";
 
-					out += UTF8ToUTF16(PinYin[j][k]); // ½« PinYin[] µÄÀàÐÍ¸ÄÎªwchar_t/char16_t¿ÉÒÔ½ÚÊ¡ÕâÀïµÄ×ª»»¼ÆËã£¬µ«»áÎþÉü¸ü¶àÄÚ´æ
+					out += UTF8ToUTF16(PinYin[j][k]); // å°† PinYin[] çš„ç±»åž‹æ”¹ä¸ºwchar_t/char16_tå¯ä»¥èŠ‚çœè¿™é‡Œçš„è½¬æ¢è®¡ç®—ï¼Œä½†ä¼šç‰ºç‰²æ›´å¤šå†…å­˜
 				}
 				goto PinYinOutSource;
 			}
@@ -191,7 +191,7 @@ int main()
 			break;
 		}
 
-		SetClipboardText(out.c_str()); // ÉèÖÃµ±Ç°ÎÄ×Öµ½¼ôÇÐ°å
+		SetClipboardText(out.c_str()); // è®¾ç½®å½“å‰æ–‡å­—åˆ°å‰ªåˆ‡æ¿
 
 		std::wcout << out << std::endl;
 	} while (true);
